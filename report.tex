@@ -1,0 +1,138 @@
+\documentclass[11pt,twocolumn]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{amsmath}
+
+\title{Computing $\pi$ in Parallel with OpenMP}
+\author{Eleanor Stenberg \\ CS 431, Project 1}
+\date{}
+
+\begin{document}
+\maketitle
+
+%==================================================
+\section{Introduction}
+This project's main objective was to compute pi in multiple differing ways. Each should produce a difference in speed and accuracy, allowing us to compare each computational way. The three different ways are comprised of a serial verison, parallel version, and a parallel Monte Carlo version. The serial version has one thread using the area of a circle. The parallel version is similar, using OpenMP two times, one with critical and one with atomic. The parallel Monte Carlo version uses random guesses. For the project, we use the serial version as the reference version.
+%==================================================
+\section{Methodology}
+
+\subsection{Integration for Area of a Circle}
+We know that a circle with a radius of 1 has an area of $\pi$. We can measure one quarter of it to see where $x$ procedes to 1 from 0 and the height is $\sqrt{1-x^2}$. Then we would multiply by 4,  cut the quarter circle into $N$ thin strips of width
+$1/N$ and add up their areas. We use the height at the middle of
+each strip:
+\begin{equation}
+  \pi \approx 4 \cdot \frac{1}{N} \sum_{i=0}^{N-1}
+  \sqrt{1 - \left(\tfrac{i+0.5}{N}\right)^2}
+\end{equation}
+A better answer should show more strips returned.
+
+\subsection{Parallel version}
+For our parallel version, we split strips between the thread and each thread adds up its own individual strips for its own separate total. There is one shared total from each thread added up at the end, adding to the shared total on thread at a time. There are a few ways to enforce this, critical and atomic. Critical serves as a general lock while atomic is a lighter lock that we can use for more simple math. A lock is only used once at the end per each thread.
+
+
+\subsection{Monte Carlo Version}
+For our Monte Carlo simulation, it's main idea is randomization. We 'throw darts' at a square, not all necessarily making it within the range. We can divide however many darts that land inside by the total we threw and multiply by 4, for each quarter, to get pi. We give individual random number generators per thread so that there is no slowing down from other threads. 
+
+%==================================================
+\section{Setup}
+The original Project should run through Talapas, however due to limitations they were run on 10 cores on a MacBook pro. Testing was done of 1,2,4,8, and 10 threads using 1 million, 10 million, and 100 million steps, or darts in Monte Carlo case. Then each combination was run 20 times to get our average.
+
+%==================================================
+\section{Results}
+
+\subsection{Speed}
+Table~\ref{tab:time} shows us how long each type took for 100 million steps, per each thread count. Our fastest was atomic with 10 threads, and our slowest was Monte Carlo with one thread. We can see each version decrease in speed as thread count increased. 
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+Threads & Critical & Atomic & Monte Carlo \\
+\hline
+1  & 0.054 & 0.052 & 0.855 \\
+2  & 0.028 & 0.027 & 0.439 \\
+4  & 0.015 & 0.014 & 0.232 \\
+8  & 0.010 & 0.010 & 0.151 \\
+10 & 0.009 & 0.009 & 0.132 \\
+\hline
+\end{tabular}
+\caption{Time in seconds}
+\label{tab:time}
+\end{table}
+
+Our next table shows us Speedup, how much faster any specific version is in comparison to serial. An idealistic speedup would have a matching number to thread count.  Table~\ref{tab:speedup} shows the speedup for critical and atomic.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+Threads & Best possible & Critical & Atomic \\
+\hline
+1  & 1  & 1.5 & 1.6 \\
+2  & 2  & 2.9 & 3.1 \\
+4  & 4  & 5.5 & 5.8 \\
+8  & 8  & 7.9 & 8.4 \\
+10 & 10 & 8.9 & 9.5 \\
+\hline
+\end{tabular}
+\caption{Speedup (100 million steps).}
+\label{tab:speedup}
+\end{table}
+
+\subsection{Problem size}
+Threads are particulariliy helpful with larger problems, and provide limited help within smaller ones. Table 3 shows the critical version at each problem size. The time stays the same despite thread size when there is only 1 million steps because simply starting a thread takes around the same amount of time as the actual work.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+Threads & 1 million & 10 million & 100 million \\
+\hline
+1  & 0.0032 & 0.012 & 0.054 \\
+2  & 0.0020 & 0.006 & 0.028 \\
+4  & 0.0021 & 0.004 & 0.015 \\
+8  & 0.0022 & 0.004 & 0.010 \\
+10 & 0.0022 & 0.003 & 0.009 \\
+\hline
+\end{tabular}
+\caption{Critical: time in seconds for each size.}
+\label{tab:size}
+\end{table}
+
+\subsection{Lock Version Comparison}
+We can see that Atomic outperformed critical in speed almost every time, in a small difference. However, with critical being the first to run within the program, it takes on the weight of booting up the threads, adding to it's time.
+
+\subsection{Accuracy}
+The outcome shows that each version of serial, critical, and atomic had almost identical answers per different thread counts, proving our parallel code correct. all gave the 
+
+Monte Carlo was correct to only around 4 digits, differing form the strips method 10 digits. Monte Carlo would require a mass amount of more darts to be comparable.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+Steps & Strips method & Monte Carlo \\
+\hline
+1 million   & 3.1415926539 & 3.1409 \\
+10 million  & 3.1415926536 & 3.1415 \\
+100 million & 3.1415926536 & 3.1416 \\
+\hline
+\end{tabular}
+\caption{Answers. Real pi = 3.1415926536.}
+\label{tab:acc}
+\end{table}
+
+Table 4 shows us a similar Monte Carlo return every time in all of its runs because each of its thread are always starting with an identical random seed. So 20 runs provides more legitimacy to its timing but did not provide a differing answer. 
+
+
+%==================================================
+\section{Discussion}
+When reviewing whether to choose critical or atomic, there is a marginal difference due to the writing of the code. With using locks once and private totals for each thread, it does not matter which you choose. If we had a lock on every step, then the conversation of which to choose would become much more important. 
+
+More threads on the Monte Carlo runs provided better speed but not better accuracy. To adjust accuracy, we would have to adjust the amount of dart thrown, not the maount of threads that throw them. We can throw more with more threads, however with randomization of the same amount of darts it is no difference.
+
+
+%==================================================
+\section{Conclusion}
+In conclusion, we can see OpenMP making the program have a drastic amount of time reduction, going to approximately 9.5 times faster with 10 threads used. Critical and atomic had marginal differences, with atomic being slightly faster. Monte carlo proved less accurate than teh strips method, and parallelism only brings in menaingful help with a large issue size. 
+
+\end{document}
