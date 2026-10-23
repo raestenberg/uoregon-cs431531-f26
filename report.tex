@@ -23,7 +23,7 @@ each strip:
   \pi \approx 4 \cdot \frac{1}{N} \sum_{i=0}^{N-1}
   \sqrt{1 - \left(\tfrac{i+0.5}{N}\right)^2}
 \end{equation}
-A better answer should show more strips returned.
+More strips should give us a better answer.
 
 \subsection{Parallel version}
 For our parallel version, we split strips between the thread and each thread adds up its own individual strips for its own separate total. There is one shared total from each thread added up at the end, adding to the shared total on thread at a time. There are a few ways to enforce this, critical and atomic. Critical serves as a general lock while atomic is a lighter lock that we can use for more simple math. A lock is only used once at the end per each thread.
@@ -40,7 +40,7 @@ The original Project should run through Talapas, however due to limitations they
 \section{Results}
 
 \subsection{Speed}
-Table~\ref{tab:time} shows us how long each type took for 100 million steps, per each thread count. Our fastest was atomic with 10 threads, and our slowest was Monte Carlo with one thread. We can see each version decrease in speed as thread count increased. 
+Table~\ref{tab:time} shows us how long each type took for 100 million steps, per each thread count. Our fastest was atomic with 10 threads, and our slowest was Monte Carlo with one thread. We can see each version decrease in time as thread count increased. 
 
 \begin{table}[h]
 \centering
@@ -102,7 +102,7 @@ Threads & 1 million & 10 million & 100 million \\
 We can see that Atomic outperformed critical in speed almost every time, in a small difference. However, with critical being the first to run within the program, it takes on the weight of booting up the threads, adding to it's time.
 
 \subsection{Accuracy}
-The outcome shows that each version of serial, critical, and atomic had almost identical answers per different thread counts, proving our parallel code correct. all gave the 
+The outcome shows that each version of serial, critical, and atomic had almost identical answers per different thread counts, proving our parallel code correct. 
 
 Monte Carlo was correct to only around 4 digits, differing form the strips method 10 digits. Monte Carlo would require a mass amount of more darts to be comparable.
 
