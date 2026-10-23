@@ -118,16 +118,16 @@ double calcPi_P1(int num_steps)
     return 4.0 * sum *step;
 }
 
-double calcPi_p1_atomic(int num_steps) {
+double calcPi_P1_atomic(int num_steps) {
     double step = 1.0 / num_steps;
     double sum = 0.0;
 
     #pragma omp parallel 
     {
         double my_sum = 0.0;
-        #pragma omp parallel 
-        {
-            double x = (i + 0.5)* step;
+        #pragma omp for
+        for (int i = 0; i < num_steps; i++) {
+            double x = (i + 0.5) * step;
             my_sum += sqrt(1.0 - x * x);
         }
 
@@ -136,6 +136,7 @@ double calcPi_p1_atomic(int num_steps) {
     }
     return 4.0 * sum * step;
 }
+
 
 double calcPi_P2(int num_steps)
 {
