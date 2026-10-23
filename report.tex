@@ -26,7 +26,7 @@ each strip:
 More strips should give us a better answer.
 
 \subsection{Parallel version}
-For our parallel version, we split strips between the thread and each thread adds up its own individual strips for its own separate total. There is one shared total from each thread added up at the end, adding to the shared total on thread at a time. There are a few ways to enforce this, critical and atomic. Critical serves as a general lock while atomic is a lighter lock that we can use for more simple math. A lock is only used once at the end per each thread.
+For our parallel version, we split strips between the thread and each thread adds up its own individual strips for its own separate total. There is one shared total from each thread added up at the end, adding to the shared total one thread at a time. There are a few ways to enforce this, critical and atomic. Critical serves as a general lock while atomic is a lighter lock that we can use for more simple math. A lock is only used once at the end per each thread.
 
 
 \subsection{Monte Carlo Version}
@@ -79,7 +79,7 @@ Threads & Best possible & Critical & Atomic \\
 \end{table}
 
 \subsection{Problem size}
-Threads are particulariliy helpful with larger problems, and provide limited help within smaller ones. Table 3 shows the critical version at each problem size. The time stays the same despite thread size when there is only 1 million steps because simply starting a thread takes around the same amount of time as the actual work.
+Threads are particularly helpful with larger problems, and provide limited help within smaller ones. Table 3 shows the critical version at each problem size. The time stays the same despite thread size when there is only 1 million steps because simply starting a thread takes around the same amount of time as the actual work.
 
 \begin{table}[h]
 \centering
@@ -104,7 +104,7 @@ We can see that Atomic outperformed critical in speed almost every time, in a sm
 \subsection{Accuracy}
 The outcome shows that each version of serial, critical, and atomic had almost identical answers per different thread counts, proving our parallel code correct. 
 
-Monte Carlo was correct to only around 4 digits, differing form the strips method 10 digits. Monte Carlo would require a mass amount of more darts to be comparable.
+Monte Carlo was correct to only around 4 digits, differing from the strips method 10 digits. Monte Carlo would require a mass amount of more darts to be comparable.
 
 \begin{table}[h]
 \centering
@@ -128,11 +128,11 @@ Table 4 shows us a similar Monte Carlo return every time in all of its runs beca
 \section{Discussion}
 When reviewing whether to choose critical or atomic, there is a marginal difference due to the writing of the code. With using locks once and private totals for each thread, it does not matter which you choose. If we had a lock on every step, then the conversation of which to choose would become much more important. 
 
-More threads on the Monte Carlo runs provided better speed but not better accuracy. To adjust accuracy, we would have to adjust the amount of dart thrown, not the maount of threads that throw them. We can throw more with more threads, however with randomization of the same amount of darts it is no difference.
+More threads on the Monte Carlo runs provided better speed but not better accuracy. To adjust accuracy, we would have to adjust the amount of dart thrown, not the amount of threads that throw them. We can throw more with more threads, however with randomization of the same amount of darts it is no difference.
 
 
 %==================================================
 \section{Conclusion}
-In conclusion, we can see OpenMP making the program have a drastic amount of time reduction, going to approximately 9.5 times faster with 10 threads used. Critical and atomic had marginal differences, with atomic being slightly faster. Monte carlo proved less accurate than teh strips method, and parallelism only brings in menaingful help with a large issue size. 
+In conclusion, we can see OpenMP making the program have a drastic amount of time reduction, going to approximately 9.5 times faster with 10 threads used. Critical and atomic had marginal differences, with atomic being slightly faster. Monte carlo proved less accurate than the strips method, and parallelism only brings in meaningful help with a large issue size. 
 
 \end{document}
