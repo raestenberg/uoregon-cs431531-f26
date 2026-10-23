@@ -13,6 +13,7 @@
 void usage(int argc, char** argv);
 double calcPi_Serial(int num_steps);
 double calcPi_P1(int num_steps);
+double calcPi_P1_atomic(int num_steps);
 double calcPi_P2(int num_steps);
 
 
@@ -51,6 +52,12 @@ int main(int argc, char** argv)
            num_steps, ElapsedTime(end_t - start_t));
     printf("Pi is %0.10f\n", Pi1);
 
+    start_t = ReadTSC();
+    double Pi1a = calcPi_P1_atomic(num_steps);
+    end_t = ReadTSC();
+    printf("Time to calculate Pi in // (atomic) with %"PRIu32" steps is: %g\n",
+    num_steps, ElapsedTime(end_t - start_t));
+    printf("Pi is %0.10f\n", Pi1a);
 
     // calculate in parallel with Monte Carlo
     start_t = ReadTSC();
@@ -72,21 +79,87 @@ void usage(int argc, char** argv)
 
 double calcPi_Serial(int num_steps)
 {
-    double pi = 0.0;
+    // do the width of each strip
+    double step = 1.0 / num_steps;
+    // get a total off all strips heights
+    double sum = 0.0;
+
+    // go visit ecah strip in iteration
+    for (int i = 0; i < num_steps; i++) {
+        double x = (i + 0.5) * step;
+        // find height & add to total
+        sum += sqrt(1.0 - x * x);
+    }
+    double pi = 4.0 * sum * step;
 
     return pi;
 }
 
 double calcPi_P1(int num_steps)
 {
-    double pi = 0.0;
+    double step = 1.0 / num_steps;
+    // make a shared total
+    double sum = 0.0;
 
-    return pi;
+    #pragma omp parallel 
+    {
+        double worker_sum = 0.0;
+
+        // split strips for workers
+        #pragma omp for 
+        for (int i = 0; i < num_steps; i++) {
+            double x = (i + 0.5) * step;
+            worker_sum += sqrt(1.0 - x*x);
+        }
+        #pragma omp critical
+        sum += worker_sum;
+    }
+
+    return 4.0 * sum *step;
+}
+
+double calcPi_p1_atomic(int num_steps) {
+    double step = 1.0 / num_steps;
+    double sum = 0.0;
+
+    #pragma omp parallel 
+    {
+        double my_sum = 0.0;
+        #pragma omp parallel 
+        {
+            double x = (i + 0.5)* step;
+            my_sum += sqrt(1.0 - x * x);
+        }
+
+        #pragma omp atomic
+        sum += my_sum;
+    }
+    return 4.0 * sum * step;
 }
 
 double calcPi_P2(int num_steps)
 {
-    double pi = 0.0;
+    // shared total, darts in circle
+    long hits = 0;
 
-    return pi;
+    #pragma omp parallel
+    {
+        // assign each woker their own starting point
+        unsigned int seed = 1234 + omp_get_thread_num();
+        long my_hits = 0;
+
+        #pragma omp for
+        for (int i = 0; i < num_steps; i++) {
+            double x = (double) rand_r(&seed) / RAND_MAX;
+            double y = (double) rand_r(&seed) / RAND_MAX;
+
+            if (x*x + y * y <= 1.0) {
+                my_hits++;
+            }
+        }
+        #pragma omp atomic
+        hits += my_hits;
+    }
+    
+    return 4.0 * hits / num_steps;
 }
