@@ -116,13 +116,58 @@ void prefix_sum(int* src, int* prefix, int n)
 
 void prefix_sum_p1(int* src, int* prefix, int n)
 {
+    int* temp = (int*) malloc(sizeof(int) * n);
+    int* in = prefix;
+    int* out = temp;
 
+    #pragma omp parallel for
+    for(int i = 0; i < n; i++) {
+        in[i] = src[i];
+    }
+
+    for(int d = 1; d < n; d = d * 2) {
+        #pragma omp parallel for
+        for(int i = 0; i < n; i++) {
+            if(i >= d) {
+                out[i] = in[i] + in[i - d];
+            } else {
+                out[i] = in[i];
+            }
+        }
+        int* t = in;
+        in = out;
+        out = t;
+    }
+
+    if(in != prefix) {
+        #pragma omp parallel for
+        for(int i = 0; i < n; i++) {
+            prefix[i] = in[i];
+        }
+    }
+
+    free(temp);
 }
 
 void prefix_sum_p2(int* src, int* prefix, int n)
 {
+    #pragma omp parallel for
+    for(int i = 0; i < n; i++) {
+        prefix[i] = src[i];
+    }
 
+    int d;
+    for(d = 1; d < n; d = d * 2) {
+        #pragma omp parallel for
+        for(int i = 2 * d - 1; i < n; i += 2 * d) {
+            prefix[i] = prefix[i] + prefix[i - d];
+        }
+    }
+
+    for(d = d / 4; d >= 1; d = d / 2) {
+        #pragma omp parallel for
+        for(int i = 3 * d - 1; i < n; i += 2 * d) {
+            prefix[i] = prefix[i] + prefix[i - d];
+        }
+    }
 }
-
-
-
